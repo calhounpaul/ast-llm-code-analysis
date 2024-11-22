@@ -13,6 +13,9 @@ import sqlite3
 from datetime import datetime
 import base64
 import hashlib
+from vllm import LLM, SamplingParams
+from typing import List, Dict
+import os
 
 THIS_DIR = Path(__file__).resolve().parent
 
@@ -261,20 +264,18 @@ def write_debug_log(prompt: str, response: str, query_type: str = "query") -> No
 
 def query_qwen(prompt: str, db_path: str = "query_cache.db", use_cache: bool = True) -> str:
     """
-    Query the Qwen model with caching support.
-    
+    Query the Qwen model with caching support using VLLM.
     Args:
         prompt: The input prompt
         db_path: Path to the SQLite database file
         use_cache: Whether to use caching (default: True)
-        
     Returns:
         Generated response from model or cache
     """
     # Ensure cache database exists
     if use_cache and not os.path.exists(db_path):
         setup_cache_db(db_path)
-    
+
     # Check cache first if enabled
     if use_cache:
         print("Checking cache...")
@@ -283,60 +284,56 @@ def query_qwen(prompt: str, db_path: str = "query_cache.db", use_cache: bool = T
             if DEBUG_TO_TXT:
                 write_debug_log(prompt, cached_response, "cache_hit")
             return cached_response
-    
-    # If no cache hit or cache disabled, query the model
+
+    # Initialize VLLM model and sampling parameters
+    #llm = LLM(model=model_name,trust_remote_code=True)  # Adjust model path as needed
+    sampling_params = SamplingParams(
+        temperature=0.7,
+        top_p=0.95,
+        max_tokens=30000
+    )
+
+    # Create messages for chat format
     messages = [
         {"role": "system", "content": "You are a helpful coding assistant."},
         {"role": "user", "content": prompt}
     ]
-    
-    text = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True
+    global model
+    # Generate response using VLLM
+    outputs = model.chat(
+        messages=[messages],
+        sampling_params=sampling_params,
+        use_tqdm=False
     )
-    
-    model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
-    generated_ids = model.generate(
-        **model_inputs,
-        max_new_tokens=1024,
-    )
-    
-    generated_ids = [
-        output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-    ]
-    
-    response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-    
+    response = outputs[0].outputs[0].text
+
     # Write debug logs before caching
     if DEBUG_TO_TXT:
         write_debug_log(prompt, response, "model_query")
-    
+
     # Cache the response if caching is enabled
     if use_cache:
         cache_response(prompt, response, db_path)
-    
+
     return response
 
 def query_qwen_multi_turn(messages: List[Dict[str, str]], db_path: str = "query_cache.db", use_cache: bool = True) -> str:
     """
-    Query the Qwen model with support for multi-turn conversations and caching.
-    
+    Query the Qwen model with support for multi-turn conversations and caching using VLLM.
     Args:
         messages: List of message dictionaries with role and content
         db_path: Path to the SQLite database file
         use_cache: Whether to use caching (default: True)
-        
     Returns:
         Generated response from model or cache
     """
     # Create a combined prompt for caching purposes
     combined_prompt = "\n".join(f"{msg['role']}: {msg['content']}" for msg in messages)
-    
+
     # Ensure cache database exists
     if use_cache and not os.path.exists(db_path):
         setup_cache_db(db_path)
-    
+
     # Check cache first if enabled
     if use_cache:
         print("Checking cache...")
@@ -345,34 +342,31 @@ def query_qwen_multi_turn(messages: List[Dict[str, str]], db_path: str = "query_
             if DEBUG_TO_TXT:
                 write_debug_log(combined_prompt, cached_response, "cache_hit_multi")
             return cached_response
-    
-    # If no cache hit or cache disabled, query the model
-    text = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True
+
+    # Initialize VLLM model and sampling parameters
+    #llm = LLM(model="Qwen/Qwen-7B")  # Adjust model path as needed
+    sampling_params = SamplingParams(
+        temperature=0.7,
+        top_p=0.95,
+        max_tokens=30000
     )
-    
-    model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
-    generated_ids = model.generate(
-        **model_inputs,
-        max_new_tokens=1024,
+    global model
+    # Generate response using VLLM
+    outputs = model.chat(
+        messages=[messages],  # Wrap in list since VLLM expects batch input
+        sampling_params=sampling_params,
+        use_tqdm=False
     )
-    
-    generated_ids = [
-        output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-    ]
-    
-    response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-    
+    response = outputs[0].outputs[0].text
+
     # Write debug logs before caching
     if DEBUG_TO_TXT:
         write_debug_log(combined_prompt, response, "model_query_multi")
-    
+
     # Cache the response if caching is enabled
     if use_cache:
         cache_response(combined_prompt, response, db_path)
-    
+
     return response
 
 def get_two_stage_analysis(prompt: str, entity_type: str) -> tuple[str, str]:
@@ -570,7 +564,7 @@ class CompactOutput:
             self.data['empty_keys'] = sorted(list(self.empty_keys))
         return self.data
 
-def truncate_middle(s: str, max_length: int = 6000) -> str:
+def truncate_middle(s: str, max_length: int = 4000) -> str:
     """
     Truncate a string in the middle to a maximum length.
     
@@ -1233,13 +1227,13 @@ class RepoAnalyzer:
         return graph
 
 if __name__ == "__main__":
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=torch.float16,
-        device_map="auto"
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    set_seed(42)
+    #model = AutoModelForCausalLM.from_pretrained(
+    #    model_name,
+    #    torch_dtype=torch.float16,
+    #    device_map="auto"
+    #)
+    model = LLM(model=model_name,trust_remote_code=True)
+    #tokenizer = AutoTokenizer.from_pretrained(model_name)
     if len(sys.argv) < 2:
         repo_path = THIS_DIR
     else:
