@@ -1,8 +1,8 @@
 # Code Analyzer
 
-A powerful Python code analysis tool that leverages Large Language Models (LLM) and Abstract Syntax Tree (AST) analysis to provide comprehensive insights into Python codebases. The analyzer generates detailed analysis of code structure, relationships, and provides AI-powered summaries using the Qwen 2.5 model.
+A Python code analysis tool that leverages Large Language Models (LLM) and Abstract Syntax Tree (AST) analysis to provide comprehensive insights into Python codebases. The analyzer generates detailed analysis of code structure, relationships, and provides AI-powered summaries using the Qwen 2.5 model.
 
-## Features
+## Current Features
 
 - 🔍 Deep code analysis using Python's AST
   - Function and method analysis
