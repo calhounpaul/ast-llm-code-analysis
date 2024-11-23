@@ -1,0 +1,86 @@
+{
+    "templates": {
+      "function": {
+        "template": "{human_readable_tree}\n\nFrom the file `/base/{path}`, analyze this Python function in context:\n\n{raw_code}\n\nFunction Context:\n- Defined in: {defined_in}\n- Calls: {calls}\n- Uses variables: {reads}\n- Modifies variables: {writes}\n- Raises exceptions: {raises}\n- Catches exceptions: {catches}\n- Type hints: {type_hints}\n- File overview: {node_map}\n\n1. What is the main purpose of this function?\n2. How does it interact with its dependencies and environment?\n3. What are the key steps in its implementation?\n4. What are its inputs, outputs, and side effects?\n5. What are the notable edge cases, error conditions, or error handling?\n\nPlease provide a concise analysis that covers these aspects.",
+        "variables": [
+          "human_readable_tree",
+          "path",
+          "raw_code",
+          "defined_in",
+          "calls",
+          "reads",
+          "writes",
+          "raises",
+          "catches",
+          "type_hints",
+          "node_map"
+        ]
+      },
+      "method": {
+        "template": "{human_readable_tree}\n\nFrom the file `/base/{path}`, analyze this Python class method in context:\n\n{raw_code}\n\nMethod Context:\n- Defined in class: {defined_in}\n- Calls: {calls}\n- Uses class/instance variables: {reads}\n- Modifies class/instance variables: {writes}\n- Raises exceptions: {raises}\n- Catches exceptions: {catches}\n- Type hints: {type_hints}\n- File overview: {node_map}\n\n1. What is the main purpose of this method?\n2. How does it interact with the class's state and other methods?\n3. What other methods or class attributes does it use?\n4. What are its inputs, outputs, and side effects on class state?\n5. What are the notable edge cases, error conditions, or error handling?\n\nPlease provide a concise analysis that covers these aspects.",
+        "variables": [
+          "human_readable_tree",
+          "path",
+          "raw_code",
+          "defined_in",
+          "calls",
+          "reads",
+          "writes",
+          "raises",
+          "catches",
+          "type_hints",
+          "node_map"
+        ]
+      },
+      "class": {
+        "template": "{human_readable_tree}\n\nFrom the file `/base/{path}`, analyze this Python class in context:\n\n{raw_code}\n\nClass Context:\n- Defined in: {defined_in}\n- Inherits from: {inherits}\n- Uses decorators: {decorators}\n- Contains methods: {contains}\n- Imports: {imports}\n- File overview: {node_map}\n\n1. What is the main purpose and responsibility of this class?\n2. How does it use inheritance and what patterns does it implement?\n3. What are its key attributes, methods, and their relationships?\n4. How does it manage and protect its internal state?\n5. What are its key dependencies and interactions with other components?\n\nPlease provide a concise analysis that covers these aspects.",
+        "variables": [
+          "human_readable_tree",
+          "path",
+          "raw_code",
+          "defined_in",
+          "inherits",
+          "decorators",
+          "contains",
+          "imports",
+          "node_map"
+        ]
+      },
+      "module": {
+        "template": "{human_readable_tree}\n\nFrom the file `/base/{path}`, analyze this Python module in context:\n\n{raw_code}\n\nModule Context:\n- Direct imports: {direct_imports}\n- From imports: {from_imports}\n- Defines classes: {classes}\n- Defines functions: {functions}\n- Defines constants: {constants}\n- File overview: {node_map}\n\n1. What is the main purpose and responsibility of this module?\n2. How do its components work together to achieve its purpose?\n3. What are its key dependencies and how does it use them?\n4. What patterns or principles does it implement?\n5. How does it fit into the larger codebase architecture?\n\nPlease provide a concise analysis that covers these aspects.",
+        "variables": [
+          "human_readable_tree",
+          "path",
+          "raw_code",
+          "direct_imports",
+          "from_imports",
+          "classes",
+          "functions",
+          "constants",
+          "node_map"
+        ]
+      },
+      "summary": {
+        "template": "Excellent work. Please provide a succinct summary of this {entity_type} in the following format:\nSUMMARY: 3-sentence summary goes here\nNOTES: any other comments or notes go here",
+        "variables": [
+          "entity_type"
+        ]
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "description": "Prompt templates for code analysis using the Qwen model",
+      "supported_entity_types": [
+        "function",
+        "method",
+        "class",
+        "module"
+      ],
+      "usage_notes": [
+        "Templates support variable interpolation using Python's str.format()",
+        "All templates assume input code has been properly formatted and sanitized",
+        "File paths should be relative to the repository root",
+        "Entity types correspond to different levels of code analysis"
+      ]
+    }
+  }

@@ -1,0 +1,113 @@
+{
+    "summaries": {
+      "module": {
+        "required_sections": [
+          "Purpose",
+          "Dependencies",
+          "Key Components",
+          "Architecture",
+          "Integration Points"
+        ],
+        "template": {
+          "Purpose": "Brief description of the module's main responsibility and role in the codebase",
+          "Dependencies": "List of key external dependencies and imports",
+          "Key Components": "Major classes, functions, and features provided",
+          "Architecture": "Design patterns, code organization, and structural choices",
+          "Integration Points": "How the module interfaces with other parts of the system",
+          "Notes": "Additional observations, warnings, or best practices"
+        }
+      },
+      "class": {
+        "required_sections": [
+          "Purpose",
+          "Inheritance",
+          "Public Interface",
+          "State Management",
+          "Dependencies"
+        ],
+        "template": {
+          "Purpose": "Primary responsibility and role of the class",
+          "Inheritance": "Parent classes and inheritance patterns used",
+          "Public Interface": "Key methods, properties, and their usage",
+          "State Management": "How class manages internal state and data",
+          "Dependencies": "External dependencies and collaborating classes",
+          "Notes": "Implementation details, warnings, or usage guidelines"
+        }
+      },
+      "function": {
+        "required_sections": [
+          "Purpose",
+          "Parameters",
+          "Return Value",
+          "Side Effects",
+          "Error Handling"
+        ],
+        "template": {
+          "Purpose": "Main responsibility and use case of the function",
+          "Parameters": "Expected inputs and their types/constraints",
+          "Return Value": "Output format and possible values",
+          "Side Effects": "State changes, I/O operations, or external calls",
+          "Error Handling": "Exception cases and error management",
+          "Notes": "Performance considerations, edge cases, or usage examples"
+        }
+      },
+      "method": {
+        "required_sections": [
+          "Purpose",
+          "Parameters",
+          "Return Value",
+          "State Impact",
+          "Error Handling"
+        ],
+        "template": {
+          "Purpose": "Method's role and responsibility within the class",
+          "Parameters": "Expected inputs and their types/constraints",
+          "Return Value": "Output format and possible values",
+          "State Impact": "Changes to class/instance state",
+          "Error Handling": "Exception cases and error management",
+          "Notes": "Implementation details, warnings, or usage examples"
+        }
+      },
+      "formatting": {
+        "section_separator": "\n\n",
+        "bullet_point": "- ",
+        "max_line_length": 80,
+        "indent_spaces": 2
+      },
+      "metadata": {
+        "version": "1.0.0",
+        "description": "Summary templates for code analysis components",
+        "author": "Code Analyzer Team",
+        "last_updated": "2024-02-22",
+        "supported_languages": [
+          "python"
+        ],
+        "supported_entity_types": [
+          "module",
+          "class",
+          "function",
+          "method"
+        ]
+      },
+      "rules": {
+        "summary_constraints": {
+          "max_summary_length": 2000,
+          "max_section_length": 500,
+          "min_sections_required": 3
+        },
+        "content_guidelines": {
+          "be_concise": "Focus on essential information without unnecessary detail",
+          "be_specific": "Use concrete examples and specific technical terms",
+          "be_actionable": "Include practical usage guidance when relevant",
+          "highlight_important": "Emphasize critical information and potential issues",
+          "maintain_context": "Consider the broader system context in descriptions"
+        }
+      },
+      "placeholders": {
+        "optional_section": "[Optional section content]",
+        "not_applicable": "N/A",
+        "missing_info": "Information not available",
+        "todo": "TODO: Complete this section"
+      }
+    }
+  }

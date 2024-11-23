@@ -1,108 +1,167 @@
-# AI-Powered Code Analysis Tool
+# Code Analyzer
 
-## Overview
-This tool performs intelligent code analysis by combining Abstract Syntax Tree (AST) parsing with the Qwen2.5 large language model to generate comprehensive code documentation and insights. It analyzes Python codebases at multiple levels (modules, classes, functions) and generates both detailed analysis and summaries.
+A powerful Python code analysis tool that leverages Large Language Models (LLM) and Abstract Syntax Tree (AST) analysis to provide comprehensive insights into Python codebases. The analyzer generates detailed analysis of code structure, relationships, and provides AI-powered summaries using the Qwen 2.5 model.
 
-## Key Features
+## Features
 
-### Static Analysis
-- Parses codebase using Python's AST
-- Tracks function calls, variable usage, and dependencies
-- Identifies relationships between code components:
-  - Function calls and dependencies
-  - Variable reads and modifications
-  - Class inheritance patterns
-  - Import relationships
-  - Type hints and annotations
+- 🔍 Deep code analysis using Python's AST
+  - Function and method analysis
+  - Class hierarchy and relationships
+  - Module dependencies and imports
+  - Variable usage and modifications
+  - Type hint extraction
+  - Exception handling patterns
 
-### AI-Powered Analysis
-- Uses Qwen2.5-Coder-14B-Instruct-AWQ model
-- Generates two-stage analysis for each code component:
-  1. Detailed Analysis
-     - Purpose and responsibilities
-     - Implementation details
-     - Dependency interactions
-     - Error handling patterns
-     - Edge cases consideration
-  2. Concise Summary
-     - 3-sentence overview
-     - Additional notes/comments
+- 🤖 AI-powered code understanding
+  - Comprehensive code summaries using Qwen 2.5
+  - Intelligent relationship mapping
+  - Context-aware analysis
+  - Multi-turn analysis generation
 
-### Analysis Context
-For each code component, provides rich context including:
-- File path and location
-- Code relationships (calls, imports, etc.)
-- Variable usage patterns
-- Exception handling
-- Type information
-- Repository structure context
+- 💾 Performance optimizations
+  - Efficient caching of LLM responses using SQLite
+  - Clean separation of analysis and LLM components
+  - Support for large codebases
+  - Debug logging and export capabilities
 
-## Deployment
+- 📊 Analysis outputs
+  - Detailed JSON reports
+  - Human-readable summaries
+  - Dependency graphs
+  - Code statistics
 
-### Docker Environment
-```dockerfile
-FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
-# ... (previous Docker configuration)
-```
+## Installation
 
-Requirements:
-- NVIDIA GPU with CUDA support
-- Docker with NVIDIA Container Toolkit
-- 16GB+ GPU memory recommended
+### Prerequisites
 
-### Quick Start
+- Python 3.12+
+- CUDA-capable GPU (for LLM inference)
+- Docker (optional, for containerized execution)
+
+### Basic Installation
+
 ```bash
-# Build container
-docker build -t code-analyzer .
+# Clone the repository
+git clone <repository-url>
+cd code-analyzer
 
-# Analyze a codebase
-docker run --gpus all \
-  -v /path/to/workdir/with/script:/home/mluser/workdir \
-  -v /path/to/cache/folder:/home/mluser/.cache \
-  -w /home/mluser/workdir \
-  code-analyzer
+# Install dependencies
+pip install -r requirements.txt
 
-# You should get a bash prompt.
-# Just run the python script with the sole argument as the root path of the tree you'd like to analyze.
-# The output ends up in analysis.json
+# Install the package
+pip install -e .
 ```
 
-### Output Format
+### Docker Installation
+
+```bash
+# Build the Docker image
+./run_in_docker.sh /path/to/analyze
+```
+
+## Usage
+
+### Command Line Interface
+
+```bash
+# Basic analysis
+code-analyzer /path/to/your/repo
+
+# Analysis with additional options
+code-analyzer /path/to/your/repo \
+  --output analysis.json \
+  --model Qwen/Qwen2.5-Coder-14B-Instruct-AWQ \
+  --debug \
+  --verbose \
+  --export
+```
+
+### Python API
+
+```python
+from code_analyzer.analyzers.repo_analyzer import RepoAnalyzer
+
+# Initialize analyzer
+analyzer = RepoAnalyzer("/path/to/your/repo")
+
+# Analyze repository
+results = analyzer.analyze_directory()
+
+# Get analysis components
+functions = analyzer.get_all_functions()
+classes = analyzer.get_all_classes()
+dependencies = analyzer.get_dependency_graph()
+stats = analyzer.get_module_statistics()
+
+# Save analysis
+analyzer.save_analysis("analysis.json")
+```
+
+## Configuration
+
+The analyzer supports several environment variables for configuration:
+
+- `CODE_ANALYZER_CACHE_DIR`: Directory for SQLite cache
+- `CODE_ANALYZER_LOG_DIR`: Directory for log files
+- `CODE_ANALYZER_LLM_DIR`: Directory for LLM query exports
+- `CODE_ANALYZER_DEBUG_DIR`: Directory for debug files
+
+## Output Format
+
+The analyzer generates a structured JSON output:
+
 ```json
 {
-  "path/to/file.py": {
-    "functions": {
-      "function_name": {
-        "analysis": "Detailed function analysis...",
-        "summary": {
-          "SUMMARY": "3-sentence summary...",
-          "NOTES": "Additional insights..."
+  "file_path.py": {
+    "path": "file_path.py",
+    "classes": {
+      "ClassName": {
+        "name": "ClassName",
+        "methods": {...},
+        "llm_analysis": {
+          "initial_analysis": "...",
+          "summary": "..."
         }
       }
     },
-    "classes": { ... },
-    "modules": { ... }
+    "functions": {...},
+    "imports": {...}
   }
 }
 ```
 
-## Performance Optimizations
-- SQLite-based response caching
-- Efficient text truncation for large files
-- Base64 encoding for cache storage
-- Debug logging capabilities
-- GPU acceleration support
+## Development
 
-## Use Cases
-- Code documentation generation
-- Technical debt analysis
-- Developer onboarding
-- Architecture documentation
-- Code quality assessment
-- Pattern recognition
+### Project Structure
+
+```
+code_analyzer/
+├── code_analyzer/
+│   ├── analyzers/      # Core analysis components
+│   ├── models/         # Data models and cache management
+│   └── utils/          # Helper utilities
+├── assets/            # Configuration and prompts
+├── tests/             # Test suite
+└── docker/            # Docker configuration
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest tests/
+
+# Run with coverage
+pytest --cov=code_analyzer tests/
+```
 
 ## Limitations
-- Requires CUDA-capable GPU
-- Analysis depth limited by model context window
-- Python-specific analysis only
-- May require manual verification for complex code patterns
+
+- Currently optimized for Python code analysis only
+- Requires access to Qwen model for LLM analysis
+- Large repositories may require significant processing time
+- Cache size can grow significantly for large codebases
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

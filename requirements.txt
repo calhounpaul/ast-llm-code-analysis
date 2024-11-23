@@ -1,0 +1,71 @@
+# Core dependencies
+torch==2.5.1
+torchvision==0.20.1
+vllm
+transformers>=4.45.2
+tokenizers>=0.19.1
+xformers==0.0.28.post3
+
+# ML and data processing
+numpy<2.0.0
+sentencepiece
+einops
+compressed-tensors==0.8.0
+autoawq
+
+# API and server
+fastapi>=0.107.0,!=0.113.*,!=0.114.0
+uvicorn[standard]
+pydantic>=2.9
+aiohttp==3.10.10
+prometheus_client>=0.18.0
+prometheus-fastapi-instrumentator>=7.0.0
+
+# Utility packages
+tqdm
+requests>=2.26.0
+psutil
+py-cpuinfo
+protobuf
+pillow
+pyzmq
+msgspec
+pyyaml
+six>=1.16.0
+filelock>=3.10.4
+typing_extensions>=4.10
+importlib_metadata
+
+# CUDA and GPU utilities
+nvidia-ml-py>=12.560.30
+ray>=2.9
+bitsandbytes==0.44.1
+cupy-cuda12x==13.3.0
+
+# AI/ML specific
+openai>=1.45.0
+tiktoken>=0.6.0
+lm-format-enforcer>=0.10.9,<0.11
+outlines>=0.0.43,<0.1
+mistral_common[opencv]>=1.5.0
+sentence-transformers==3.2.1
+transformers-stream-generator==0.0.5
+
+# Development dependencies
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-forked==1.6.0
+pytest-rerunfailures==14.0
+pytest-shard==0.1.2
+black==24.10.0
+ruff==0.6.5
+isort==5.13.2
+mypy==1.11.1
+yapf==0.32.0
+codespell==2.3.0
+sphinx-lint==1.0.0
+
+# Type stubs
+types-PyYAML
+types-requests
+types-setuptools
