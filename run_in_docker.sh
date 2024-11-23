@@ -9,12 +9,39 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 IMAGE_NAME="code-analyzer"
 CONTAINER_NAME="code-analyzer-container"
 
+# Default model
+#DEFAULT_MODEL="Qwen/Qwen2.5-Coder-0.5B-Instruct-AWQ"
+DEFAULT_MODEL="Qwen/Qwen2.5-Coder-14B-Instruct-AWQ"
+
 # Create persistent directories on host
 mkdir -p "$SCRIPT_DIR/data/cache"      # For SQLite database
 mkdir -p "$SCRIPT_DIR/data/logs"       # For log files
 mkdir -p "$SCRIPT_DIR/data/hf_cache"   # For HuggingFace cache
 mkdir -p "$SCRIPT_DIR/data/llm_out"    # For LLM query exports
 mkdir -p "$SCRIPT_DIR/data/debug"      # For debug files
+
+# Parse command line arguments
+TARGET_PATH=""
+MODEL="$DEFAULT_MODEL"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --model)
+            MODEL="$2"
+            shift 2
+            ;;
+        *)
+            if [ -z "$TARGET_PATH" ]; then
+                TARGET_PATH="$1"
+            else
+                echo "Error: Unexpected argument: $1"
+                echo "Usage: $0 [--model model_name] <target_directory>"
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
 
 # Check if Docker image exists
 if [[ "$(docker images -q $IMAGE_NAME 2> /dev/null)" == "" ]]; then
@@ -30,9 +57,10 @@ docker stop $CONTAINER_NAME 2>/dev/null
 docker rm $CONTAINER_NAME 2>/dev/null
 
 # If a target directory is provided
-if [ $# -eq 1 ]; then
-    TARGET_PATH=$(realpath "$1")
+if [ -n "$TARGET_PATH" ]; then
+    TARGET_PATH=$(realpath "$TARGET_PATH")
     echo "Target directory: $TARGET_PATH"
+    echo "Using model: $MODEL"
     
     # Base docker run command with shared volumes
     DOCKER_CMD="docker run --gpus all -it --rm \
@@ -50,10 +78,10 @@ if [ $# -eq 1 ]; then
         -e CODE_ANALYZER_DEBUG_DIR=/home/mluser/.local/share/code_analyzer/debug"
     
     echo "Running analysis on mounted directory..."
-    $DOCKER_CMD $IMAGE_NAME python3 -m code_analyzer --export --debug --verbose /home/mluser/target
+    $DOCKER_CMD $IMAGE_NAME python3 -m code_analyzer --export --verbose /home/mluser/target --model "$MODEL"
 else
     echo "Error: Please provide a target directory to analyze"
-    echo "Usage: $0 <target_directory>"
+    echo "Usage: $0 [--model model_name] <target_directory>"
     exit 1
 fi
 
