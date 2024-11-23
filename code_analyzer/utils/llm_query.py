@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from vllm import LLM, SamplingParams
 import logging
-from code_analyzer.utils.model_singleton import get_model
+from code_analyzer.utils.model_singleton import get_model, initialize_model
 
 def get_two_stage_analysis(prompt: str, entity_type: str) -> tuple[str, str]:
     """
@@ -89,7 +89,7 @@ class LLMQueryManager:
         # Create LLM output directory if exporting
         if self.export and self.llm_out_dir:
             self.llm_out_dir.mkdir(parents=True, exist_ok=True)
-            
+
     def _export_interaction(self, prompt: str, response: str) -> None:
         """Export LLM interaction to a text file if export is enabled."""
         if not self.export or not self.llm_out_dir:
@@ -179,7 +179,10 @@ class LLMQueryManager:
     def initialize_model(self) -> None:
         """Initialize the model if not already initialized."""
         if self.model is None:
-            self.model = get_model()
+            # Pass the model name to get_model to ensure proper initialization
+            self.model = get_model(self.model_name)
+            if self.verbose:
+                self.logger.info(f"Initialized model: {self.model_name}")
            
     def _cache_response(self, prompt: str, response: str) -> None:
         """Store prompt-response pair in cache."""
