@@ -14,21 +14,30 @@ A Python code analysis tool that leverages Large Language Models (LLM) and Abstr
 
 - 🤖 AI-powered code understanding
   - Comprehensive code summaries using Qwen 2.5
-  - Intelligent relationship mapping
   - Context-aware analysis
-  - Multi-turn analysis generation
+  - 2-turn analysis generation
 
 - 💾 Performance optimizations
   - Efficient caching of LLM responses using SQLite
   - Clean separation of analysis and LLM components
-  - Support for large codebases
   - Debug logging and export capabilities
 
 - 📊 Analysis outputs
   - Detailed JSON reports
   - Human-readable summaries
+
+## Future Features
+
+- Analysis outputs
   - Dependency graphs
   - Code statistics
+
+- Intelligence Features
+  - Semantic search
+  - Relationship mapping
+
+- Developer Tools
+  - Exception solution resolution via containerization with full stack visualization and DevOps organization for team harmonization leading to digital transformation and cloud optimization
 
 ## Installation
 
