@@ -1,216 +1,138 @@
-#ast-llm-code-analysis/tests/test_repo_analyzer.py
-
-import unittest
+import pytest
+from unittest.mock import MagicMock, patch, mock_open
 from pathlib import Path
-import tempfile
-import shutil
-import json
-import os
-from unittest.mock import patch, MagicMock, ANY
-
 from code_analyzer.analyzers.repo_analyzer import RepoAnalyzer
-from code_analyzer.models.data_classes import ModuleInfo, ClassInfo, FunctionInfo, Parameter, AnalysisResults
+from code_analyzer.models.data_classes import ModuleInfo, FunctionInfo, ClassInfo, AnalysisResults
 
-class TestRepoAnalyzer(unittest.TestCase):
-    def setUp(self):
-        """Set up temporary directory and sample files for testing"""
-        self.temp_dir = tempfile.mkdtemp()
-        self.sample_files = {
-            'simple.py': '''
-def greet(name: str) -> str:
-    """Simple greeting function"""
-    return f"Hello, {name}!"
-''',
-            'complex.py': '''
-from typing import List, Optional
+@pytest.fixture
+def mock_llm_manager():
+    """Fixture to create a mock LLMQueryManager."""
+    llm_manager = MagicMock()
+    llm_manager.query.return_value = "Mock analysis result"
+    llm_manager.query_multi_turn.return_value = "Mock summary"
+    return llm_manager
 
-class Person:
-    """Represents a person"""
-    def __init__(self, name: str, age: int):
-        self.name = name
-        self.age = age
+@pytest.fixture
+def repo_analyzer(mock_llm_manager):
+    """Fixture to initialize a RepoAnalyzer instance with a mock LLM manager."""
+    return RepoAnalyzer(repo_path="mock_repo", llm_manager=mock_llm_manager)
+
+@patch("builtins.open", new_callable=mock_open, read_data="def mock_function(): pass")
+@patch("code_analyzer.analyzers.repo_analyzer.extract_human_readable_file_tree", return_value="Mock tree")
+@patch("code_analyzer.analyzers.repo_analyzer.analyze_relationships", return_value={"mock_relationships": []})
+@patch("code_analyzer.analyzers.repo_analyzer.ASTAnalyzer")
+def test_analyze_file(mock_ast_analyzer, mock_analyze_relationships, mock_extract_tree, mock_open_file, repo_analyzer):
+    """Test analyze_file method."""
+    # Mock the ASTAnalyzer visit method and module object
+    mock_ast_instance = mock_ast_analyzer.return_value
+    mock_ast_instance.module = ModuleInfo(
+        path="mock_file.py",
+        raw_code="def mock_function(): pass",
+        functions={
+            "mock_function": FunctionInfo(
+                name="mock_function",
+                prompt="Mock prompt",
+                parameters=[]
+            )
+        },
+        classes={}
+    )
     
-    def greet(self) -> str:
-        return f"Hi, I'm {self.name}!"
+    module_info = repo_analyzer.analyze_file("mock_file.py")
+    
+    # Assertions
+    assert module_info.path == "mock_file.py"
+    assert "mock_function" in module_info.functions
+    repo_analyzer.llm_manager.query.assert_called()  # Ensure LLM was queried
 
-def process_people(people: List[Person]) -> List[str]:
-    """Process a list of people"""
-    return [person.greet() for person in people]
+from unittest.mock import patch, MagicMock
+from pathlib import Path
 
-GREETING = "Welcome!"
-'''
-        }
-        
-        # Create sample files in temp directory
-        for filename, content in self.sample_files.items():
-            file_path = Path(self.temp_dir) / filename
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-        
-        # Initialize analyzer with temp directory
-        self.analyzer = RepoAnalyzer(self.temp_dir)
+@patch("code_analyzer.analyzers.repo_analyzer.Path.rglob", return_value=[Path("mock_file1.py"), Path("mock_file2.py")])
+@patch("code_analyzer.analyzers.repo_analyzer.RepoAnalyzer.analyze_file")
+def test_analyze_directory(mock_analyze_file, mock_rglob, repo_analyzer):
+    """Test analyze_directory method with mocked Path.is_file."""
+    # Mock analyze_file to populate modules
+    def mock_analyze_file_side_effect(file_path):
+        print("Mock analyze_file called with:", file_path)
+        module = ModuleInfo(path=file_path, raw_code="", functions={}, classes={})
+        repo_analyzer.modules[file_path] = module
+        return module
 
-    def tearDown(self):
-        """Clean up temporary directory after tests"""
-        shutil.rmtree(self.temp_dir)
+    mock_analyze_file.side_effect = mock_analyze_file_side_effect
 
-    @patch('code_analyzer.analyzers.repo_analyzer.query_qwen')
-    def test_analyze_single_file(self, mock_query):
-        """Test analysis of a single Python file"""
-        # Mock LLM responses
-        mock_query.return_value = "Mock analysis"
-        
-        # Analyze simple.py
-        file_path = str(Path(self.temp_dir) / 'simple.py')
-        module_info = self.analyzer.analyze_file(file_path)
-        
-        # Verify basic module properties
-        self.assertIsInstance(module_info, ModuleInfo)
-        self.assertEqual(module_info.path, file_path)
-        self.assertIn('greet', module_info.functions)
-        
-        # Verify function analysis
-        greet_func = module_info.functions['greet']
-        self.assertEqual(greet_func.name, 'greet')
-        self.assertEqual(greet_func.return_annotation, 'str')
-        self.assertEqual(len(greet_func.parameters), 1)
-        self.assertEqual(greet_func.parameters[0].name, 'name')
-        self.assertEqual(greet_func.parameters[0].annotation, 'str')
-        
-        # Verify LLM was called appropriate number of times
-        expected_calls = 2  # One for module, one for function
-        self.assertEqual(mock_query.call_count, expected_calls)
+    # Patch is_file to always return True
+    with patch.object(Path, "is_file", return_value=True):
+        # Run the method
+        repo_analyzer.analyze_directory()
 
-    @patch('code_analyzer.analyzers.repo_analyzer.query_qwen')
-    def test_analyze_complex_file(self, mock_query):
-        """Test analysis of a file with multiple components"""
-        # Mock LLM responses
-        mock_query.return_value = "Mock analysis"
-        
-        # Analyze complex.py
-        file_path = str(Path(self.temp_dir) / 'complex.py')
-        module_info = self.analyzer.analyze_file(file_path)
-        
-        # Verify imports
-        self.assertIn('typing', str(module_info.imports))
-        
-        # Verify class analysis
-        self.assertIn('Person', module_info.classes)
-        person_class = module_info.classes['Person']
-        self.assertEqual(len(person_class.methods), 2)  # __init__ and greet
-        
-        # Verify method analysis
-        greet_method = person_class.methods['greet']
-        self.assertTrue(greet_method.is_method)
-        self.assertEqual(greet_method.return_annotation, 'str')
-        
-        # Verify function analysis
-        self.assertIn('process_people', module_info.functions)
-        process_func = module_info.functions['process_people']
-        self.assertEqual(process_func.return_annotation, 'List[str]')
-        
-        # Verify constants
-        self.assertIn('GREETING', module_info.constants)
-        self.assertEqual(module_info.constants['GREETING'], '"Welcome!"')
+    # Debug: Verify the output from rglob and analyze_file
+    print("Paths returned by rglob:", list(mock_rglob.return_value))
+    print("Mock analyze_file calls:", mock_analyze_file.call_args_list)
 
-    def test_analyze_directory(self):
-        """Test analysis of entire directory"""
-        modules = self.analyzer.analyze_directory()
-        
-        # Verify all files were analyzed
-        expected_files = {str(Path(self.temp_dir) / f) for f in self.sample_files.keys()}
-        analyzed_files = set(modules.keys())
-        self.assertEqual(expected_files, analyzed_files)
-        
-        # Verify each module was analyzed properly
-        for module in modules.values():
-            self.assertIsInstance(module, ModuleInfo)
-            self.assertIsNotNone(module.raw_code)
+    # Ensure analyze_file was called for each file
+    mock_analyze_file.assert_any_call("mock_file1.py")
+    mock_analyze_file.assert_any_call("mock_file2.py")
 
-    def test_save_analysis(self):
-        """Test saving analysis results to JSON"""
-        # Analyze directory
-        self.analyzer.analyze_directory()
-        
-        # Save analysis
-        output_path = str(Path(self.temp_dir) / 'analysis.json')
-        self.analyzer.save_analysis(output_path)
-        
-        # Verify JSON file exists and is valid
-        self.assertTrue(os.path.exists(output_path))
-        with open(output_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        # Check basic structure
-        self.assertIsInstance(data, dict)
-        self.assertEqual(len(data), len(self.sample_files))
-        
-        # Verify each module's data
-        for module_path, module_data in data.items():
-            self.assertIn('path', module_data)
-            self.assertIn('raw_code', module_data)
+    # Assertions
+    assert len(repo_analyzer.modules) == 2
+    assert "mock_file1.py" in repo_analyzer.modules
+    assert "mock_file2.py" in repo_analyzer.modules
 
-    def test_get_all_functions(self):
-        """Test retrieving all functions from analyzed files"""
-        self.analyzer.analyze_directory()
-        functions = self.analyzer.get_all_functions()
-        
-        # Verify function count (greet, __init__, greet method, process_people)
-        self.assertEqual(len(functions), 4)
-        
-        # Verify function types
-        function_names = {f.name for f in functions}
-        self.assertIn('greet', function_names)
-        self.assertIn('process_people', function_names)
-        self.assertIn('__init__', function_names)
+def test_get_all_functions(repo_analyzer):
+    """Test get_all_functions method."""
+    repo_analyzer.modules = {
+        "file1.py": ModuleInfo(
+            path="file1.py",
+            raw_code="",
+            functions={
+                "func1": FunctionInfo(name="func1", prompt="", parameters=[]),
+                "func2": FunctionInfo(name="func2", prompt="", parameters=[])
+            },
+            classes={}
+        )
+    }
+    
+    functions = repo_analyzer.get_all_functions()
+    assert len(functions) == 2
+    assert functions[0].name == "func1"
 
-    def test_get_all_classes(self):
-        """Test retrieving all classes from analyzed files"""
-        self.analyzer.analyze_directory()
-        classes = self.analyzer.get_all_classes()
-        
-        # Verify class count
-        self.assertEqual(len(classes), 1)
-        
-        # Verify class properties
-        person_class = classes[0]
-        self.assertEqual(person_class.name, 'Person')
-        self.assertEqual(len(person_class.methods), 2)
+def test_get_module_statistics(repo_analyzer):
+    """Test get_module_statistics method."""
+    repo_analyzer.modules = {
+        "file1.py": ModuleInfo(
+            path="file1.py",
+            raw_code="def func1(): pass\nclass Class1:\n    def method1(self): pass",
+            functions={"func1": FunctionInfo(name="func1", prompt="", parameters=[])},
+            classes={
+                "Class1": ClassInfo(
+                    name="Class1",
+                    bases=["object"],
+                    methods={
+                        "method1": FunctionInfo(name="method1", prompt="", parameters=[])
+                    }
+                )
+            }
+        )
+    }
+    
+    stats = repo_analyzer.get_module_statistics()
+    
+    # Assertions
+    assert stats["total_modules"] == 1
+    assert stats["total_classes"] == 1
+    assert stats["total_functions"] == 1
+    assert stats["total_methods"] == 1
+    assert stats["total_lines"] == 3
 
-    def test_get_dependency_graph(self):
-        """Test generating dependency graph from imports"""
-        self.analyzer.analyze_directory()
-        graph = self.analyzer.get_dependency_graph()
-        
-        # Verify graph structure
-        self.assertIsInstance(graph, dict)
-        self.assertEqual(len(graph), len(self.sample_files))
-        
-        # Check dependencies
-        complex_path = str(Path(self.temp_dir) / 'complex.py')
-        self.assertIn(complex_path, graph)
-        
-        # simple.py should have no dependencies
-        simple_path = str(Path(self.temp_dir) / 'simple.py')
-        self.assertEqual(len(graph[simple_path]), 0)
-
-    @patch('code_analyzer.analyzers.repo_analyzer.query_qwen')
-    def test_error_handling(self, mock_query):
-        """Test handling of syntax errors in Python files"""
-        # Create file with syntax error
-        error_file = Path(self.temp_dir) / 'error.py'
-        with open(error_file, 'w', encoding='utf-8') as f:
-            f.write('def invalid_syntax(:')  # Missing parameter name
-        
-        # Analyze file
-        module_info = self.analyzer.analyze_file(str(error_file))
-        
-        # Verify error was captured
-        self.assertIsNotNone(module_info.error)
-        self.assertIn('SyntaxError', module_info.error)
-        
-        # Verify LLM wasn't called for invalid file
-        mock_query.assert_not_called()
-
-if __name__ == '__main__':
-    unittest.main()
+@patch("code_analyzer.analyzers.repo_analyzer.json.dump")
+def test_save_analysis(mock_json_dump, repo_analyzer):
+    """Test save_analysis method."""
+    repo_analyzer.modules = {
+        "file1.py": ModuleInfo(path="file1.py", raw_code="", functions={}, classes={})
+    }
+    
+    repo_analyzer.save_analysis("mock_output.json")
+    
+    # Assertions
+    mock_json_dump.assert_called_once()

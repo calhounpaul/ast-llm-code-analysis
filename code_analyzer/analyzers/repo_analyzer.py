@@ -223,12 +223,17 @@ class RepoAnalyzer:
         else:
             directory = Path(directory)
             
+        print("Directory being analyzed:", directory)
+        
         for path in directory.rglob('*.py'):
+            print("Found file:", path)
             # Skip hidden files and test files
             if not path.name.startswith('_') and not path.name.startswith('test_') and path.is_file():
+                print("Analyzing file:", path)
                 self.analyze_file(str(path))
-                
+                    
         return self.modules
+
     
     def save_analysis(self, output_path: str) -> None:
         """

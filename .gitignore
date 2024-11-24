@@ -3,3 +3,6 @@ data/
 *.pyo
 */__pycache__/
 __pycache__/
+mock_output.json
+.coverage
+query_cache.db

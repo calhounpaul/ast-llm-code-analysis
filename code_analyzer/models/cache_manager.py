@@ -112,7 +112,15 @@ class CacheManager:
             prompt: The input prompt
             response: The generated response
             metadata: Optional metadata to store with the cache entry
+        
+        Raises:
+            ValueError: If the prompt or response is empty
         """
+        if not prompt:
+            raise ValueError("Prompt cannot be empty.")
+        if response is None:  # Allow empty strings but not None
+            raise ValueError("Response cannot be None.")
+        
         query_hash = self._generate_hash(prompt)
         timestamp = datetime.now().isoformat()
         
@@ -137,6 +145,7 @@ class CacheManager:
                 )
             )
             conn.commit()
+
 
     def invalidate(self, prompt: str) -> bool:
         """

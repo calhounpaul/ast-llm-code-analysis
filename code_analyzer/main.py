@@ -59,27 +59,12 @@ def parse_arguments() -> argparse.Namespace:
 
 def get_app_dirs() -> tuple[Path, Path, Path, Path]:
     """Get application directories for cache, logs, LLM output, and debug."""
-    # Check for environment variables first
-    cache_dir = os.getenv('CODE_ANALYZER_CACHE_DIR')
-    log_dir = os.getenv('CODE_ANALYZER_LOG_DIR')
-    llm_dir = os.getenv('CODE_ANALYZER_LLM_DIR')
-    debug_dir = os.getenv('CODE_ANALYZER_DEBUG_DIR')
+    cache_dir = Path(os.getenv('CODE_ANALYZER_CACHE_DIR', Path.home() / '.local' / 'share' / 'code_analyzer' / 'cache'))
+    log_dir = Path(os.getenv('CODE_ANALYZER_LOG_DIR', Path.home() / '.local' / 'share' / 'code_analyzer' / 'logs'))
+    llm_dir = Path(os.getenv('CODE_ANALYZER_LLM_DIR', Path.home() / '.local' / 'share' / 'code_analyzer' / 'llm_out'))
+    debug_dir = Path(os.getenv('CODE_ANALYZER_DEBUG_DIR', Path.home() / '.local' / 'share' / 'code_analyzer' / 'debug'))
     
-    if all([cache_dir, log_dir, llm_dir, debug_dir]):
-        return (Path(cache_dir), Path(log_dir), Path(llm_dir), Path(debug_dir))
-    
-    # Default to user's home directory if not specified
-    if os.name == 'nt':  # Windows
-        app_dir = Path.home() / 'AppData' / 'Local' / 'CodeAnalyzer'
-    else:  # Unix-like
-        app_dir = Path.home() / '.local' / 'share' / 'code_analyzer'
-    
-    return (
-        app_dir / 'cache',
-        app_dir / 'logs',
-        app_dir / 'llm_out',
-        app_dir / 'debug'
-    )
+    return cache_dir, log_dir, llm_dir, debug_dir
 
 def setup_logging(debug: bool = False) -> None:
     """Set up logging configuration for the application."""
@@ -98,7 +83,7 @@ def setup_logging(debug: bool = False) -> None:
             logging.FileHandler(log_file)
         ]
     )
-    
+        
     # Log the paths being used
     logger = logging.getLogger(__name__)
     logger.debug(f"Log file location: {log_file}")
