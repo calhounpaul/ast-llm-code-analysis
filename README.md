@@ -1,124 +1,168 @@
 # Code Analyzer
 
-A Python code analysis tool that leverages Large Language Models (LLM) and Abstract Syntax Tree (AST) analysis to provide comprehensive insights into Python codebases. The analyzer generates detailed analysis of code structure, relationships, and provides AI-powered summaries using the Qwen 2.5 model.
+A Python code analysis tool that leverages Large Language Models (LLM) and Abstract Syntax Tree (AST) analysis to provide comprehensive insights into Python codebases. The analyzer generates detailed analysis of code structure, relationships, and provides AI-powered summaries using any instruct model [supported by vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html).
 
 ## Current Features
 
-- 🔍 Deep code analysis using Python's AST
-  - Function and method analysis
-  - Class hierarchy and relationships
-  - Module dependencies and imports
-  - Variable usage and modifications
-  - Type hint extraction
-  - Exception handling patterns
+### Static Analysis
+- AST-based code structure analysis
+- Function and method analysis
+- Class hierarchy mapping
+- Variable usage analysis
+- Type hint extraction
+- Exception handling analysis
 
-- 🤖 AI-powered code understanding
-  - Comprehensive code summaries using Qwen 2.5
-  - Context-aware analysis
-  - 2-turn analysis generation
+### AI-Powered Understanding
+- Contextual code analysis using Qwen 2.5 models
+- Two-turn analysis generation
+- Module and function level summaries
+- Basic code relationship detection
 
-- 💾 Performance optimizations
-  - Efficient caching of LLM responses using SQLite
-  - Clean separation of analysis and LLM components
-  - Debug logging and export capabilities
+### Performance & Reliability
+- SQLite-based LLM response caching
+- GPU acceleration support via CUDA
+- Comprehensive error handling
+- Basic logging capabilities
 
-- 📊 Analysis outputs
-  - Detailed JSON reports
-  - Human-readable summaries
+### Output & Visualization
+- Structured JSON reports
+- Basic contextual summaries
+- Debug logs
+- Simple analysis statistics
 
-## Future Features
+## Future Features (largely hallucinated by Claude 3.5 )
 
-- Analysis outputs
-  - Dependency graphs
-  - Code statistics
+### Enhanced Analysis
+- Advanced dependency and relationship mapping
+- Comprehensive call graph generation
+- Deep exception flow tracking
+- Semantic search capabilities
 
-- Intelligence Features
-  - Semantic search
-  - Relationship mapping
+### Advanced AI Features
+- Multi-turn analysis generation (beyond 2 turns)
+- Hierarchical summaries at all levels
+- Intelligent relationship mapping
+- Advanced context understanding
 
-- Developer Tools
-  - Exception solution resolution via containerization with full stack visualization and DevOps organization for team harmonization leading to digital transformation and cloud optimization
+### DevOps & Team Tools
+- Containerized execution environment
+- Full stack visualization
+- Team harmonization tools
+- Cloud optimization features
+- Exception solution resolution
+
+### Extended Visualizations
+- Interactive dependency graphs
+- Advanced code statistics
+- Rich visual reports
+- Extended analysis exports
 
 ## Installation
 
 ### Prerequisites
-
 - Python 3.12+
-- CUDA-capable GPU (for LLM inference)
-- Docker (optional, for containerized execution)
+- NVIDIA GPU with CUDA support
+- Docker (recommended)
 
-### Basic Installation
-
+### Docker Installation (Recommended)
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd code-analyzer
 
+# Run analysis using Docker
+./run_in_docker.sh /path/to/analyze --model Qwen/Qwen2.5-Coder-14B-Instruct-AWQ
+```
+
+### Manual Installation
+```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Install the package
+# Install package in development mode
 pip install -e .
-```
-
-### Docker Installation
-
-```bash
-# Build the Docker image
-./run_in_docker.sh /path/to/analyze
 ```
 
 ## Usage
 
 ### Command Line Interface
-
 ```bash
 # Basic analysis
-code-analyzer /path/to/your/repo
+code-analyzer /path/to/analyze
 
-# Analysis with additional options
-code-analyzer /path/to/your/repo \
-  --output analysis.json \
-  --model Qwen/Qwen2.5-Coder-14B-Instruct-AWQ \
-  --debug \
-  --verbose \
-  --export
+# Advanced options
+code-analyzer /path/to/analyze \
+    --model Qwen/Qwen2.5-Coder-14B-Instruct-AWQ \
+    --output analysis.json \
+    --export \
+    --verbose \
+    --debug
 ```
 
 ### Python API
-
 ```python
 from code_analyzer.analyzers.repo_analyzer import RepoAnalyzer
+from code_analyzer.utils.llm_query import LLMQueryManager
 
-# Initialize analyzer
-analyzer = RepoAnalyzer("/path/to/your/repo")
+# Initialize LLM manager
+llm_manager = LLMQueryManager(
+    verbose=True,
+    use_cache=True,
+    export=True
+)
 
-# Analyze repository
-results = analyzer.analyze_directory()
+# Create analyzer instance
+analyzer = RepoAnalyzer(
+    repo_path="/path/to/analyze",
+    llm_manager=llm_manager
+)
+
+# Run analysis
+modules = analyzer.analyze_directory()
 
 # Get analysis components
+stats = analyzer.get_module_statistics()
 functions = analyzer.get_all_functions()
 classes = analyzer.get_all_classes()
 dependencies = analyzer.get_dependency_graph()
-stats = analyzer.get_module_statistics()
 
-# Save analysis
+# Save results
 analyzer.save_analysis("analysis.json")
 ```
 
 ## Configuration
 
-The analyzer supports several environment variables for configuration:
+### Environment Variables
+```
+CODE_ANALYZER_CACHE_DIR  # SQLite cache location
+CODE_ANALYZER_LOG_DIR    # Log file directory
+CODE_ANALYZER_LLM_DIR    # LLM query export directory
+CODE_ANALYZER_DEBUG_DIR  # Debug file location
+```
 
-- `CODE_ANALYZER_CACHE_DIR`: Directory for SQLite cache
-- `CODE_ANALYZER_LOG_DIR`: Directory for log files
-- `CODE_ANALYZER_LLM_DIR`: Directory for LLM query exports
-- `CODE_ANALYZER_DEBUG_DIR`: Directory for debug files
+### Project Structure
+```
+code_analyzer/
+├── analyzers/          # Core analysis components
+│   ├── ast_analyzer.py     # AST parsing and analysis
+│   ├── relationship_visitor.py  # Code relationship analysis
+│   └── repo_analyzer.py    # Repository-level analysis
+├── models/             # Data structures
+│   ├── data_classes.py     # Core data models
+│   └── cache_manager.py    # LLM response caching
+├── utils/              # Supporting utilities
+└── assets/            # Configuration files and prompts
+```
 
 ## Output Format
 
-The analyzer generates a structured JSON output:
+The analyzer generates detailed JSON reports containing:
+- Module-level analysis
+- Class hierarchies and relationships
+- Function and method details
+- AI-generated summaries
+- Code statistics and metrics
 
+Example output structure:
 ```json
 {
   "file_path.py": {
@@ -126,51 +170,43 @@ The analyzer generates a structured JSON output:
     "classes": {
       "ClassName": {
         "name": "ClassName",
-        "methods": {...},
+        "bases": ["ParentClass"],
+        "methods": {},
         "llm_analysis": {
           "initial_analysis": "...",
           "summary": "..."
         }
       }
     },
-    "functions": {...},
-    "imports": {...}
+    "functions": {},
+    "imports": {},
+    "error": null
   }
 }
 ```
 
 ## Development
 
-### Project Structure
-
-```
-code_analyzer/
-├── code_analyzer/
-│   ├── analyzers/      # Core analysis components
-│   ├── models/         # Data models and cache management
-│   └── utils/          # Helper utilities
-├── assets/            # Configuration and prompts
-├── tests/             # Test suite
-└── docker/            # Docker configuration
-```
-
 ### Running Tests
-
 ```bash
 # Run all tests
-pytest tests/
+./run_in_docker.sh --test
+
+# Run specific test file
+./run_in_docker.sh --test tests/test_ast_analyzer.py
 
 # Run with coverage
-pytest --cov=code_analyzer tests/
+./run_in_docker.sh --test --pytest-args '--cov=code_analyzer/ --cov-report=html'
 ```
 
 ## Limitations
 
-- Currently optimized for Python code analysis only
-- Requires access to Qwen model for LLM analysis
+- Python-specific analysis only
+- Requires NVIDIA GPU for optimal performance
 - Large repositories may require significant processing time
-- Cache size can grow significantly for large codebases
+- Cache storage requirements scale with codebase size
+- Relies on external Qwen model availability
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License. See the LICENSE file for details.
